@@ -23,4 +23,5 @@ The log will be saved in `logs/dev`.
 
 # References
 [1] https://github.com/kuangliu/pytorch-cifar
+
 [2] https://myrtle.ai/learn/how-to-train-your-resnet-5-hyperparameters/
