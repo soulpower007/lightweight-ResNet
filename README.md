@@ -3,7 +3,7 @@ coming up with a light weight resnet with comparable performance to heavier mode
 
 # Training
 
-This Python script `main.py` is designed to run an experiment to train ResNet on CIFAR10.
+The Python script `main.py` is designed to run an experiment to train ResNet on CIFAR10.
 ```
 python main.py [--dev]
 ```
@@ -20,6 +20,21 @@ The script can be run in development mode by passing the --dev argument when run
 When in development mode, only the first 100 training and testing data will be used and 1 epoch will be run.
 The log will be saved in `logs/dev`.
 
+
+# Inference
+
+The Python script `inference.py` is designed to predict the test dataset.
+1. Download `cifar_test_nolabels.pkl` from https://www.kaggle.com/competitions/deep-learning-mini-project-spring-24-nyu/data .
+2. Change the path to test dataset and model checkpoint in line 12-13 of `inference.py`.
+    ```
+    TEST_FILE = "data/cifar_test_nolabels.pkl"
+    MODEL_PTH = "logs/0/ckpt.pth"
+    ```
+3. Run the script.
+    ```
+    python inference.py
+    ```
+4. Predictions will be saved as `predictions.csv`.
 
 # References
 [1] https://github.com/kuangliu/pytorch-cifar

@@ -1,6 +1,8 @@
 # Training data and logs
 logs
 data
+*.csv
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

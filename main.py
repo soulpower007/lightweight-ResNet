@@ -35,15 +35,16 @@ experiment_id = str(i) if not dev else "dev"
 experiment_log = os.path.join(LOG_DIR, experiment_id)
 os.makedirs(experiment_log, exist_ok=True)
 shutil.copy(__file__, experiment_log)
+print(f"Starting experiment {experiment_id}.")
 
-# Set environment
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# Set random seed for reproducibility
 torch.manual_seed(42)
 
 # Data
 transform_train = transforms.Compose(
     [
-        transforms.RandomCrop(32, padding=4),
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
+        transforms.RandomAffine(degrees=15, translate=(0.1, 0.1)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -70,18 +71,9 @@ if dev:
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False)
 
-classes = (
-    "plane",
-    "car",
-    "bird",
-    "cat",
-    "deer",
-    "dog",
-    "frog",
-    "horse",
-    "ship",
-    "truck",
-)
+# # Save an example of transformed image
+# images, _ = next(iter(trainloader))
+# torchvision.utils.save_image(images[0], "transformed_image.png")
 
 
 # Model
@@ -153,16 +145,23 @@ class ResNet(nn.Module):
         return out
 
 
-net = ResNet(BasicBlock, [2, 2, 2, 2])
-net = net.to(device)
+net = ResNet(BasicBlock, [2, 1, 1, 1])
 
 n_parameters = sum(p.numel() for p in net.parameters() if p.requires_grad)
 print(f"Number of parameters: {n_parameters:,}")
 
 # Training
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
+optimizer = optim.Adam(net.parameters(), lr=3e-4, weight_decay=1e-5)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+
+if torch.cuda.is_available():
+    device = "cuda"
+elif torch.backends.mps.is_available():  # For Apple silicon
+    device = "mps"
+else:
+    device = "cpu"
+net = net.to(device)
 
 
 def train(epoch):
@@ -227,7 +226,7 @@ def test(epoch):
 best_acc = 0
 best_epoch = 0
 logs = {}
-for epoch in range(10):
+for epoch in range(100):
     train_log = train(epoch)
     test_log = test(epoch)
     scheduler.step()
