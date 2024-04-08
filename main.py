@@ -156,6 +156,9 @@ class ResNet(nn.Module):
 net = ResNet(BasicBlock, [2, 2, 2, 2])
 net = net.to(device)
 
+n_parameters = sum(p.numel() for p in net.parameters() if p.requires_grad)
+print(f"Number of parameters: {n_parameters:,}")
+
 # Training
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
