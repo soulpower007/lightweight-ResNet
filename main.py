@@ -44,7 +44,7 @@ torch.manual_seed(42)
 transform_train = transforms.Compose(
     [
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
-        transforms.RandomAffine(degrees=15, translate=(0.1, 0.1)),
+        transforms.RandomAffine(degrees=15, translate=(0.1, 0.1), scale=(0.9, 1.1)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -159,7 +159,8 @@ print(f"Number of parameters: {n_parameters:,}")
 
 # Training
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(net.parameters(), lr=3e-4, weight_decay=1e-5)
+optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
+# optimizer = optim.Adam(net.parameters(), lr=3e-4, weight_decay=1e-5)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
 if torch.cuda.is_available():

@@ -17,6 +17,7 @@ args = parser.parse_args()
 model_path = f"logs/{args.id}/ckpt.pth"
 
 
+# Prepare test data
 transform_test = transforms.Compose(
     [
         transforms.ToTensor(),
@@ -25,7 +26,6 @@ transform_test = transforms.Compose(
 )
 
 
-# Prepare test data
 class TestDataset(torch.utils.data.Dataset):
     def __init__(self, file, transform):
         self.raw_data = self.load_data(file)

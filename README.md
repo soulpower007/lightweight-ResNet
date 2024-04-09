@@ -34,4 +34,6 @@ The Python script `inference.py` is designed to predict the test dataset.
 # References
 [1] https://github.com/kuangliu/pytorch-cifar
 
-[2] https://myrtle.ai/learn/how-to-train-your-resnet-5-hyperparameters/
+[2] https://github.com/Nikunj-Gupta/Efficient_ResNets
+
+[3] https://myrtle.ai/learn/how-to-train-your-resnet-5-hyperparameters/
