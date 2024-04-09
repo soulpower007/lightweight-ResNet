@@ -24,17 +24,12 @@ The log will be saved in `logs/dev`.
 # Inference
 
 The Python script `inference.py` is designed to predict the test dataset.
-1. Download `cifar_test_nolabels.pkl` from https://www.kaggle.com/competitions/deep-learning-mini-project-spring-24-nyu/data .
-2. Change the path to test dataset and model checkpoint in line 12-13 of `inference.py`.
+1. Download `cifar_test_nolabels.pkl` from https://www.kaggle.com/competitions/deep-learning-mini-project-spring-24-nyu/data to `data/`.
+2. Run the script with experiment id.
     ```
-    TEST_FILE = "data/cifar_test_nolabels.pkl"
-    MODEL_PTH = "logs/0/ckpt.pth"
+    python inference.py --id <experiment_id>
     ```
-3. Run the script.
-    ```
-    python inference.py
-    ```
-4. Predictions will be saved as `predictions.csv`.
+3. Predictions will be saved as `predictions.csv`.
 
 # References
 [1] https://github.com/kuangliu/pytorch-cifar

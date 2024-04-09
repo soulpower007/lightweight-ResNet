@@ -223,7 +223,7 @@ def test(epoch):
                 )
 
     log = {
-        "net": net.state_dict(),
+        "net": net,
         "loss": test_loss / len(testloader),
         "acc": correct / total,
     }
@@ -240,12 +240,9 @@ for epoch in range(200):
 
     # Save checkpoint based on best testing accuracy
     if test_log["acc"] > best_acc:
-        state = {
-            "net": test_log["net"],
-            "acc": test_log["acc"],
-            "epoch": epoch,
-        }
-        torch.save(state, os.path.join(experiment_log, f"ckpt.pth"))
+        torch.jit.script(test_log["net"]).save(
+            os.path.join(experiment_log, f"ckpt.pth")
+        )
         best_acc = test_log["acc"]
         best_epoch = epoch
 

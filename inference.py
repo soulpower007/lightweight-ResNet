@@ -1,108 +1,28 @@
+import argparse
 import csv
 import pickle
 
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torchvision.transforms as transforms
 from PIL import Image
 from tqdm import tqdm
 
 TEST_FILE = "data/cifar_test_nolabels.pkl"
-MODEL_PTH = "logs/0/ckpt.pth"
+
+# Get experiment id and model path
+parser = argparse.ArgumentParser()
+parser.add_argument("--id", type=str, required=True)
+args = parser.parse_args()
+model_path = f"logs/{args.id}/ckpt.pth"
 
 
-######################################################################################################
-# Change model
-class BasicBlock(nn.Module):
-    expansion = 1
-
-    def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
-        )
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
-        )
-        self.bn2 = nn.BatchNorm2d(planes)
-
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion * planes:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(
-                    in_planes,
-                    self.expansion * planes,
-                    kernel_size=1,
-                    stride=stride,
-                    bias=False,
-                ),
-                nn.BatchNorm2d(self.expansion * planes),
-            )
-
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        out = F.relu(out)
-        return out
-
-
-class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNet, self).__init__()
-        self.in_planes = 64
-
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-
-        # Residual layers
-        layers = []
-        for i, num_block in enumerate(num_blocks):
-            stride = 1 if i == 0 else 2
-            layers.append(self._make_layer(block, 64 * 2**i, num_block, stride=stride))
-        self.layers = nn.Sequential(*self.layers)
-
-        # Average pooling
-        self.avg_pool = nn.AvgPool2d(32 // (2 ** (len(num_blocks) - 1)))
-
-        # FC
-        self.linear = nn.Linear(
-            64 * 2 ** (len(num_blocks) - 1) * block.expansion, num_classes
-        )
-
-    def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
-            self.in_planes = planes * block.expansion
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layers(out)
-        out = self.avg_pool(out)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        return out
-
-
-net = ResNet(BasicBlock, [4, 4, 3])
-######################################################################################################
-
-
-######################################################################################################
-# Change test transforms
 transform_test = transforms.Compose(
     [
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ]
 )
-######################################################################################################
 
 
 # Prepare test data
@@ -168,7 +88,7 @@ elif torch.backends.mps.is_available():
     device = "mps"
 else:
     device = "cpu"
-net.load_state_dict(torch.load(MODEL_PTH)["net"])
+net = torch.jit.load(model_path)
 net = net.to(device)
 net = net.eval()
 
