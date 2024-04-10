@@ -1,9 +1,9 @@
 # lightweight-ResNet
-coming up with a light weight resnet with comparable performance to heavier models
+This project will develop a lightweight ResNet with less that 5 million parameters for CIFAR-10 image classification.
 
 # Training
 
-The Python script `main.py` is designed to run an experiment to train ResNet on CIFAR10.
+The Python script `main.py` is designed to run an experiment to train ResNet on CIFAR-10.
 ```
 python main.py [--dev]
 ```
@@ -25,11 +25,25 @@ The log will be saved in `logs/dev`.
 
 The Python script `inference.py` is designed to predict the test dataset.
 1. Download `cifar_test_nolabels.pkl` from https://www.kaggle.com/competitions/deep-learning-mini-project-spring-24-nyu/data to `data/`.
-2. Run the script with experiment id.
+2. Run the script with experiment id. Use multiple experiments ids for average ensemble.
     ```
     python inference.py --id <experiment_id>
     ```
 3. Predictions will be saved as `predictions.csv`.
+
+# Plots
+
+We provide a few script for plot visualizations.
+
+1. `analyze.py` is used to plot loss and accuracy of training and testing against epoch.
+    ```
+    python analyze.py --id <experiment_id>
+    ```
+
+2. `plot_parameters` is used to plot testing accuracy againt number of parameters.
+    ```
+    python plot_parameters.py
+    ```
 
 # References
 [1] https://github.com/kuangliu/pytorch-cifar
