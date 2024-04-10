@@ -3,6 +3,7 @@ import csv
 import pickle
 
 import numpy as np
+import pandas as pd
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
@@ -10,12 +11,10 @@ from tqdm import tqdm
 
 TEST_FILE = "data/cifar_test_nolabels.pkl"
 
-# Get experiment id and model path
+# Get experiment ids to ensemble
 parser = argparse.ArgumentParser()
-parser.add_argument("--id", type=str, required=True)
+parser.add_argument("--id", type=str, nargs="+", required=True)
 args = parser.parse_args()
-model_path = f"logs/{args.id}/ckpt.pth"
-
 
 # Prepare test data
 transform_test = transforms.Compose(
@@ -81,26 +80,39 @@ class TestDataset(torch.utils.data.Dataset):
 testset = TestDataset(TEST_FILE, transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False)
 
-# Prepare model
+# Device
 if torch.cuda.is_available():
     device = "cuda"
-elif torch.backends.mps.is_available():
+elif torch.backends.mps.is_available():  # For Apple silicon
     device = "mps"
 else:
     device = "cpu"
-net = torch.jit.load(model_path)
-net = net.to(device)
-net = net.eval()
+
 
 # Inference
-predictions = {"ID": [], "Labels": []}
-with torch.no_grad():
-    for inputs, IDs in tqdm(testloader, dynamic_ncols=True):
-        inputs = inputs.to(device)
-        outputs = net(inputs)
-        _, predicted = outputs.max(1)
-        predictions["ID"].extend(IDs.cpu().tolist())
-        predictions["Labels"].extend(predicted.cpu().tolist())
+predictions = []
+for experiment_id in args.id:
+    model_path = f"./logs/{experiment_id}/ckpt.pth"
+    net = torch.jit.load(model_path)
+    net = net.to(device)
+    net = net.eval()
+
+    prediction = {"ID": [], "Labels": []}
+    with torch.no_grad():
+        for inputs, IDs in tqdm(testloader, dynamic_ncols=True):
+            inputs = inputs.to(device)
+            outputs = net(inputs)
+            outputs = torch.softmax(outputs, dim=1)
+
+            prediction["ID"].extend(IDs.cpu().tolist())
+            prediction["Labels"].extend(outputs.cpu().numpy())
+
+    prediction = pd.DataFrame(prediction)
+    predictions.append(prediction)
+
+# Ensemble
+predictions = pd.concat(predictions).groupby("ID")["Labels"].sum().reset_index()
+predictions["Labels"] = predictions["Labels"].apply(lambda x: np.argmax(x))
 
 # Save predictions
 with open("predictions.csv", "w", newline="") as csvfile:
