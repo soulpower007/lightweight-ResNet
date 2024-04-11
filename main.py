@@ -69,7 +69,7 @@ if dev:
     testset = torch.utils.data.Subset(testset, list(range(100)))
 
 trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=128, shuffle=True, num_workers=4
+    trainset, batch_size=64, shuffle=True, num_workers=4
 )
 testloader = torch.utils.data.DataLoader(
     testset, batch_size=100, shuffle=False, num_workers=4
@@ -163,7 +163,7 @@ print(f"Number of parameters: {n_parameters:,}")
 
 # Training
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
+optimizer = optim.SGD(net.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4)
 # optimizer = optim.Adam(net.parameters(), lr=3e-4, weight_decay=1e-5)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
