@@ -93,11 +93,11 @@ class BasicBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1, kernel_size=3, shortcut_kernel_size=1):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+            in_planes, planes, kernel_size=3, stride=stride, padding='same', bias=False
         )
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
+            planes, planes, kernel_size=3, stride=1, padding='same', bias=False
         )
         self.bn2 = nn.BatchNorm2d(planes)
 
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         self.in_planes = num_channels
         self.kernel_size = kernel_size
         self.shortcut_kernel_size = shortcut_kernel_size
-        self.conv1 = nn.Conv2d(3, num_channels, kernel_size=kernel_size, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(3, num_channels, kernel_size=kernel_size, stride=1, padding='same', bias=False)
         self.bn1 = nn.BatchNorm2d(num_channels)
 
         # Residual layers
