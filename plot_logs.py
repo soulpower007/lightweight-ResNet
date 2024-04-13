@@ -37,4 +37,4 @@ axs[1].set_ylabel("Accuracy")
 axs[1].set_title("Accuracy")
 
 plt.tight_layout()  # Adjust the layout so plots don't overlap
-plt.savefig("training_logs.png")  # Save the plot to a file
+plt.savefig("logs.png")  # Save the plot to a file

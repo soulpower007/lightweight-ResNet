@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import shutil
 
 import torch
 import torch.nn as nn
@@ -15,27 +14,47 @@ from tqdm import tqdm
 LOG_DIR = "./logs"
 DATA_DIR = "./data"
 
-# Check if dev mode
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--dev", action="store_true", help="Run in development mode")
+
+# Hyperparameters
+parser.add_argument("--arch", type=int, nargs="+", default=[4, 4, 3])  # Architecture
+parser.add_argument("--ch", type=int, default=64)  # Base channels
+parser.add_argument("--ks", type=int, default=3)  # Kernel size
+parser.add_argument("--sks", type=int, default=1)  # Skip kernel size
+parser.add_argument("--lr", type=float, default=0.05)  # Learning rate
+parser.add_argument("--bs", type=int, default=64)  # Batch size
+
+
+args = parser.parse_args()
+
 # In dev mode, only the first 100 training and testing data will be used and 1 epoch will be run.
 # The log will be saved in logs/dev.
-parser = argparse.ArgumentParser()
-parser.add_argument("--dev", action="store_true")
-args = parser.parse_args()
 dev = args.dev
 if dev:
     print("Running in dev mode.")
 
-
-# Log experiment
-# New experiment id is created by counting the number of existing experiments.
+# Log experiment, new experiment id is created by counting the number of existing experiments.
 i = 0
 while os.path.exists(os.path.join(LOG_DIR, str(i))):
     i += 1
 experiment_id = str(i) if not dev else "dev"
 experiment_log = os.path.join(LOG_DIR, experiment_id)
 os.makedirs(experiment_log, exist_ok=True)
-shutil.copy(__file__, experiment_log)
 print(f"Starting experiment {experiment_id}.")
+
+# Save configuration
+config = {
+    "Architecture": args.arch,
+    "Base Channels": args.ch,
+    "Kernel Size": args.ks,
+    "Skip Kernel Size": args.sks,
+    "Learning Rate": args.lr,
+    "Batch Size": args.bs,
+}
+with open(os.path.join(LOG_DIR, "config.json"), "w") as f:
+    json.dump(config, f)
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
@@ -69,29 +88,35 @@ if dev:
     testset = torch.utils.data.Subset(testset, list(range(100)))
 
 trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=64, shuffle=True, num_workers=4
+    trainset, batch_size=config["Batch Size"], shuffle=True, num_workers=4
 )
 testloader = torch.utils.data.DataLoader(
     testset, batch_size=100, shuffle=False, num_workers=4
 )
-
-# # Save an example of transformed image
-# images, _ = next(iter(trainloader))
-# torchvision.utils.save_image(images[0], "transformed_image.png")
 
 
 # Model
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1, kernel_size=3, skip_kernel_size=1):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+            in_planes,
+            planes,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=kernel_size // 2,
+            bias=False,
         )
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
+            planes,
+            planes,
+            kernel_size=kernel_size,
+            stride=1,
+            padding=kernel_size // 2,
+            bias=False,
         )
         self.bn2 = nn.BatchNorm2d(planes)
 
@@ -101,7 +126,8 @@ class BasicBlock(nn.Module):
                 nn.Conv2d(
                     in_planes,
                     self.expansion * planes,
-                    kernel_size=1,
+                    kernel_size=skip_kernel_size,
+                    padding=skip_kernel_size // 2,
                     stride=stride,
                     bias=False,
                 ),
@@ -117,18 +143,36 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(
+        self,
+        block,
+        num_blocks,
+        num_classes=10,
+        num_channels=64,
+        kernel_size=3,
+        skip_kernel_size=1,
+    ):
         super(ResNet, self).__init__()
-        self.in_planes = 64
-
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.in_planes = num_channels
+        self.kernel_size = kernel_size
+        self.skip_kernel_size = skip_kernel_size
+        self.conv1 = nn.Conv2d(
+            3,
+            num_channels,
+            kernel_size=kernel_size,
+            stride=1,
+            padding=kernel_size // 2,
+            bias=False,
+        )
+        self.bn1 = nn.BatchNorm2d(num_channels)
 
         # Residual layers
         layers = []
         for i, num_block in enumerate(num_blocks):
             stride = 1 if i == 0 else 2
-            layers.append(self._make_layer(block, 64 * 2**i, num_block, stride=stride))
+            layers.append(
+                self._make_layer(block, num_channels * 2**i, num_block, stride=stride)
+            )
         self.layers = nn.Sequential(*layers)
 
         # Average pooling
@@ -136,14 +180,22 @@ class ResNet(nn.Module):
 
         # FC
         self.linear = nn.Linear(
-            64 * 2 ** (len(num_blocks) - 1) * block.expansion, num_classes
+            num_channels * 2 ** (len(num_blocks) - 1) * block.expansion, num_classes
         )
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
+            layers.append(
+                block(
+                    self.in_planes,
+                    planes,
+                    stride,
+                    self.kernel_size,
+                    self.skip_kernel_size,
+                )
+            )
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
@@ -156,24 +208,29 @@ class ResNet(nn.Module):
         return out
 
 
-net = ResNet(BasicBlock, [4, 4, 3])
+net = ResNet(
+    BasicBlock,
+    num_blocks=config["Architecture"],
+    num_channels=config["Base Channels"],
+    kernel_size=config["Kernel Size"],
+    skip_kernel_size=config["Skip Kernel Size"],
+)
 
 n_parameters = sum(p.numel() for p in net.parameters() if p.requires_grad)
 print(f"Number of parameters: {n_parameters:,}")
 
 # Training
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.05, momentum=0.9, weight_decay=5e-4)
-# optimizer = optim.Adam(net.parameters(), lr=3e-4, weight_decay=1e-5)
+optimizer = optim.SGD(
+    net.parameters(), lr=config["Learning Rate"], momentum=0.9, weight_decay=5e-4
+)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
-if torch.cuda.is_available():
-    device = "cuda"
-elif torch.backends.mps.is_available():  # For Apple silicon
-    device = "mps"
-else:
-    device = "cpu"
+device = "cuda"
 net = net.to(device)
+
+
+scaler = torch.cuda.amp.GradScaler()
 
 
 def train(epoch):
@@ -186,10 +243,14 @@ def train(epoch):
         for batch_idx, (inputs, targets) in enumerate(tepoch):
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
-            outputs = net(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
+
+            with torch.cuda.amp.autocast():
+                outputs = net(inputs)
+                loss = criterion(outputs, targets)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
             train_loss += loss.item()
             _, predicted = outputs.max(1)

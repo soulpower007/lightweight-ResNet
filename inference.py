@@ -81,13 +81,7 @@ testset = TestDataset(TEST_FILE, transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False)
 
 # Device
-if torch.cuda.is_available():
-    device = "cuda"
-elif torch.backends.mps.is_available():  # For Apple silicon
-    device = "mps"
-else:
-    device = "cpu"
-
+device = "cuda"
 
 # Inference
 predictions = []
