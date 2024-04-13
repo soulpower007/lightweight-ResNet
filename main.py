@@ -53,7 +53,7 @@ config = {
     "Learning Rate": args.lr,
     "Batch Size": args.bs,
 }
-with open(os.path.join(LOG_DIR, "config.json"), "w") as f:
+with open(os.path.join(experiment_log, "config.json"), "w") as f:
     json.dump(config, f)
 
 # Set random seed for reproducibility
