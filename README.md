@@ -43,7 +43,7 @@ Scripts are available for visualizing data:
 
 ### Jupyter Notebook
 
-    Alternatively, you can follow along our Jupyter Notebook(TrainPlotInference.ipynb) to train new Resnet model or get plots and inference from our best performing model
+Alternatively, you can follow along our Jupyter Notebook(TrainPlotInference.ipynb) to train new Resnet model or get plots and inference from our best performing model
     
 
 ## References
