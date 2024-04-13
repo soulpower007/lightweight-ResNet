@@ -41,6 +41,11 @@ Scripts are available for visualizing data:
     python plot_parameters.py
     ```
 
+### Jupyter Notebook
+
+    Alternatively, you can follow along our Jupyter Notebook(TrainPlotInference.ipynb) to train new Resnet model or get plots and inference from our best performing model
+    
+
 ## References
 - [Kuangliu's PyTorch CIFAR GitHub](https://github.com/kuangliu/pytorch-cifar)
 - [Efficient_ResNets GitHub by Nikunj Gupta](https://github.com/Nikunj-Gupta/Efficient_ResNets)
