@@ -43,7 +43,8 @@ Scripts are available for visualizing data:
 
 ### Jupyter Notebook
 
-Alternatively, you can follow along our Jupyter Notebook(TrainPlotInference.ipynb) to train new Resnet model or get plots and inference from our best performing model
+Alternatively, you can follow along our Jupyter Notebook(TrainPlotInference.ipynb) to train new Resnet model or get plots and inference from our best performing model.
+The above notebook was run on colab and for inference please make sure the file is in the folder 'data/cifar_test_nolabels.pkl' We couldn't upload the pkl file here as it was more than 25MB (too large to uplaod on github). 
     
 
 ## References
